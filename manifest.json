@@ -1,0 +1,10 @@
+{
+  "domain": "pb25",
+  "name": "PB25 Integration",
+  "version": "1.0",
+  "documentation": "https://www.example.com",
+  "dependencies": [],
+  "codeowners": [],
+  "requirements": ["aiohttp", "voluptuous"]
+}
+

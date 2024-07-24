@@ -1,0 +1,4 @@
+pb25:
+  host: 192.168.1.25
+  scan_interval: 30
+

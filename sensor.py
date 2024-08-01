@@ -7,11 +7,13 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     # Create sensor entities for each relevant piece of data
     sensors = [
         PB25Sensor(coordinator, "ttop", "Temperature", "°C"),
-        PB25Sensor(coordinator, "Flame", "Flamma", None),
-        PB25Sensor(coordinator, "mode", "Läge", None),
+        PB25Sensor(coordinator, "tRoom", "Rumstemp", "°C"),
+        PB25Sensor(coordinator, "Flame", "Flamma", "Flamma"),
+        PB25Sensor(coordinator, "mode", "Driftsläge", None),
         PB25Sensor(coordinator, "alarm2", "Larmtext", None),
-        PB25Sensor(coordinator, "alarm1", "Larmstatus", None),  # No unit of measurement for text
-        PB25Sensor(coordinator, "glow", "Tändning", None),  # No unit of measurement for text
+        PB25Sensor(coordinator, "alarm1", "Larmstatus", None),
+        PB25Sensor(coordinator, "glow", "Tändning", None),
+        PB25Sensor(coordinator, "amps", "Ström", "A"),
         # Add other sensors here
     ]
 

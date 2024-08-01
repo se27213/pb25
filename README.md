@@ -7,3 +7,4 @@ Jag har lagt filerna i en egen katalog och startat om HA
 Samtliga sensorer måste deklareras i sensor.py inklusive enhet eller None.
 
 Grundkoden framtagen till stor del med AI eftersom jag inte kan python, anpassningar gjorda av mig.
+IP-adress till PB25 måste läggas till i configuration.yaml

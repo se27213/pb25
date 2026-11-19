@@ -24,7 +24,7 @@ The integration requests the endpoint already used by the original implementatio
 
     http://<host>/data.html
 
-It extracts a JSON object from the response and exposes the fields already present in the integration:
+It extracts a JSON object from the response and exposes these fields:
 
 - ttop
 - tRoom
@@ -33,9 +33,11 @@ It extracts a JSON object from the response and exposes the fields already prese
 - alarm2
 - alarm1
 - glow
+- xFan (XHSTFAN speed, percent)
+- cFan (CONV FAN speed, percent)
 - amps
 
-Numeric values are exposed as numbers even when the PB25 response encodes them as strings, for example "64" or "0.2". Text values such as STANDBY, OFF, and alarm messages remain text.
+Numeric values are exposed as numbers even when the PB25 response encodes them as strings, for example "64" or "0.2". Fan speeds are exposed as percentages. Text values such as STANDBY, OFF, and alarm messages remain text.
 
 The integration does not assume that additional endpoints or fields exist.
 

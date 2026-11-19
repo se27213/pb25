@@ -14,6 +14,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
+    PERCENTAGE,
     EntityCategory,
     UnitOfElectricCurrent,
     UnitOfTemperature,
@@ -69,6 +70,18 @@ SENSORS: tuple[SensorEntityDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SensorEntityDescription(
+        key="xFan",
+        name="Förbränningsfläkt",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    SensorEntityDescription(
+        key="cFan",
+        name="Konvektionsfläkt",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    SensorEntityDescription(
         key="amps",
         name="Ström",
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
@@ -86,6 +99,8 @@ ENTITY_OBJECT_IDS = {
     "alarm1": "pb25_larmstatus",
     "alarm2": "pb25_larmtext",
     "tRoom": "pb25_rumstemp",
+    "xFan": "pb25_forbranningsflakt",
+    "cFan": "pb25_konvektionsflakt",
     "amps": "pb25_strom",
 }
 

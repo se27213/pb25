@@ -31,46 +31,46 @@ _LOGGER = logging.getLogger(__name__)
 SENSORS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key="mode",
-        name="PB25 Driftsläge",
+        name="Driftsläge",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SensorEntityDescription(
         key="ttop",
-        name="PB25 Temperature",
+        name="Temperatur",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SensorEntityDescription(
         key="Flame",
-        name="PB25 Flamma",
+        name="Flamma",
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SensorEntityDescription(
         key="glow",
-        name="PB25 Tändning",
+        name="Tändning",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SensorEntityDescription(
         key="alarm1",
-        name="PB25 Larmstatus",
+        name="Larmstatus",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SensorEntityDescription(
         key="alarm2",
-        name="PB25 Larmtext",
+        name="Larmtext",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SensorEntityDescription(
         key="tRoom",
-        name="PB25 Rumstemp",
+        name="Rumstemp",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SensorEntityDescription(
         key="amps",
-        name="PB25 Ström",
+        name="Ström",
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         device_class=SensorDeviceClass.CURRENT,
         state_class=SensorStateClass.MEASUREMENT,
@@ -108,7 +108,7 @@ class PB25Sensor(CoordinatorEntity[PB25DataUpdateCoordinator], SensorEntity):
     """A sensor backed by the PB25 coordinator."""
 
     entity_description: SensorEntityDescription
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
 
     def __init__(
         self,
@@ -121,10 +121,9 @@ class PB25Sensor(CoordinatorEntity[PB25DataUpdateCoordinator], SensorEntity):
         self.entity_description = description
         self._key = description.key
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
-        self._attr_name = description.name
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, coordinator.host)},
-            name=f"PB25 ({coordinator.host})",
+            name="PB25",
             manufacturer="KMP AB",
             model="PB25",
         )

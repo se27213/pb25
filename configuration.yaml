@@ -1,4 +1,5 @@
+# Legacy YAML import example only.
+# For a new setup, add PB25 from Settings → Devices & services.
 pb25:
-  host: <IP_ADDRESS TO PB25>
+  host: 192.168.1.50
   scan_interval: 30
-

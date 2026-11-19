@@ -35,11 +35,13 @@ It extracts a JSON object from the response and exposes the fields already prese
 - glow
 - amps
 
-It does not assume that additional endpoints or fields exist.
+Numeric values are exposed as numbers even when the PB25 response encodes them as strings, for example "64" or "0.2". Text values such as STANDBY, OFF, and alarm messages remain text.
+
+The integration does not assume that additional endpoints or fields exist.
 
 ## Notes
 
 - Communication uses HTTP, matching the existing PB25 code.
 - Keep the PB25 reachable only on a trusted local network.
-- Numeric sensors must return values convertible to a finite number.
+- Numeric values must be finite numbers.
 - Home Assistant must be able to reach the configured host.

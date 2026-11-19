@@ -44,6 +44,7 @@ SENSORS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key="Flame",
         name="PB25 Flamma",
+        state_class=SensorStateClass.MEASUREMENT,
     ),
     SensorEntityDescription(
         key="glow",
@@ -135,36 +136,42 @@ class PB25Sensor(CoordinatorEntity[PB25DataUpdateCoordinator], SensorEntity):
 
     @property
     def native_value(self) -> str | float | None:
-        """Return the current PB25 value."""
+        """Return a numeric value as a number and preserve textual status values."""
         raw_value: Any = self.coordinator.data.get(self._key)
 
         if raw_value is None:
             return None
 
-        if self.entity_description.native_unit_of_measurement:
-            if isinstance(raw_value, bool):
-                _LOGGER.warning("PB25 returned a boolean for numeric field %s", self._key)
+        if isinstance(raw_value, bool):
+            if self.entity_description.native_unit_of_measurement:
+                _LOGGER.warning(
+                    "PB25 returned a boolean for numeric field %s",
+                    self._key,
+                )
                 return None
-            try:
-                value = float(raw_value)
-            except (TypeError, ValueError):
+            return str(raw_value)
+
+        try:
+            numeric_value = float(raw_value)
+        except (TypeError, ValueError):
+            if self.entity_description.native_unit_of_measurement:
                 _LOGGER.warning(
                     "Non-numeric PB25 value for field %s: %r",
                     self._key,
                     raw_value,
                 )
                 return None
+            return str(raw_value)
 
-            if not math.isfinite(value):
-                _LOGGER.warning(
-                    "Non-finite PB25 value for field %s: %r",
-                    self._key,
-                    raw_value,
-                )
-                return None
-            return value
+        if not math.isfinite(numeric_value):
+            _LOGGER.warning(
+                "Non-finite PB25 value for field %s: %r",
+                self._key,
+                raw_value,
+            )
+            return None
 
-        return str(raw_value)
+        return numeric_value
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

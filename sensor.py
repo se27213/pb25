@@ -175,8 +175,20 @@ class PB25Sensor(CoordinatorEntity[PB25DataUpdateCoordinator], SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Expose the PB25 key and raw field value for existing templates."""
+        """Expose the PB25 key and a type-normalized field value."""
+        raw_value: Any = self.coordinator.data.get(self._key)
+
+        if raw_value is not None and not isinstance(raw_value, bool):
+            try:
+                numeric_value = float(raw_value)
+            except (TypeError, ValueError):
+                pass
+            else:
+                raw_value = (
+                    numeric_value if math.isfinite(numeric_value) else None
+                )
+
         return {
             "pb25_key": self._key,
-            "raw": self.coordinator.data.get(self._key),
+            "raw": raw_value,
         }

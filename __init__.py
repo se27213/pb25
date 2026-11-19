@@ -1,88 +1,79 @@
-import aiohttp
-import async_timeout
-import logging
-import re
-import json  # Importera json-biblioteket
-import asyncio  # Importera asyncio-biblioteket
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.helpers import discovery
-from homeassistant.const import CONF_HOST
-import homeassistant.helpers.config_validation as cv
-import voluptuous as vol
-from datetime import timedelta
+"""PB25 Home Assistant integration."""
 
-DOMAIN = "pb25"
-PLATFORMS = ["sensor"]
+from __future__ import annotations
+
+import logging
+
+import voluptuous as vol
+
+from homeassistant.config_entries import ConfigEntry, SOURCE_IMPORT
+from homeassistant.const import CONF_HOST, Platform
+from homeassistant.core import HomeAssistant
+import homeassistant.helpers.config_validation as cv
+
+from .const import (
+    CONF_SCAN_INTERVAL,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+)
+from .coordinator import PB25DataUpdateCoordinator, normalize_host
 
 _LOGGER = logging.getLogger(__name__)
+PLATFORMS: list[Platform] = [Platform.SENSOR]
 
-CONFIG_SCHEMA = vol.Schema({
-    DOMAIN: vol.Schema({
-        vol.Required(CONF_HOST): cv.string,
-        vol.Optional('scan_interval', default=30): vol.All(int, vol.Range(min=1)),  # Default to 30 seconds
-    })
-}, extra=vol.ALLOW_EXTRA)
-
-async def async_setup(hass, config):
-    """Set up the PB25 integration."""
-    _LOGGER.debug("Setting up PB25 integration")
-    conf = config.get(DOMAIN)
-    if conf is None:
-        _LOGGER.error("No configuration found for PB25")
-        return False
-
-    host = conf[CONF_HOST]
-    scan_interval = conf.get('scan_interval', 30)  # Default to 30 seconds
-
-    _LOGGER.debug(f"PB25 host: {host}, scan_interval: {scan_interval}")
-
-    session = aiohttp.ClientSession()
-
-    async def async_update_data():
-        """Fetch data from PB25."""
-        try:
-            _LOGGER.debug("Fetching data from PB25")
-            async with async_timeout.timeout(10):
-                response = await session.get(f'http://{host}/data.html')
-                text = await response.text()  # Read the response as text
-
-                # Extract JSON from the text if possible
-                try:
-                    # Assume the JSON data is directly in the response body
-                    data = re.search(r'{.*}', text)
-                    if data:
-                        json_text = data.group(0)
-                        _LOGGER.debug(f"Extracted JSON text: {json_text}")
-                        parsed_data = json.loads(json_text)
-                        _LOGGER.debug(f"Data received from PB25: {parsed_data}")
-                        return parsed_data
-                    else:
-                        _LOGGER.error("No JSON data found in response")
-                        raise UpdateFailed("No JSON data found in response")
-                except ValueError as e:
-                    _LOGGER.error(f"Failed to parse JSON from response: {e}")
-                    raise UpdateFailed(f"Failed to parse JSON from response: {e}")
-
-        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
-            _LOGGER.error(f"Error fetching data: {err}")
-            raise UpdateFailed(f"Error fetching data: {err}")
-
-    coordinator = DataUpdateCoordinator(
-        hass,
-        _LOGGER,
-        name="PB25",
-        update_method=async_update_data,
-        update_interval=timedelta(seconds=scan_interval),
-    )
-
-    await coordinator.async_config_entry_first_refresh()
-
-    hass.data[DOMAIN] = coordinator
-
-    for platform in PLATFORMS:
-        hass.async_create_task(
-            discovery.async_load_platform(hass, platform, DOMAIN, {}, config)
+CONFIG_SCHEMA = vol.Schema(
+    {
+        DOMAIN: vol.Schema(
+            {
+                vol.Required(CONF_HOST): cv.string,
+                vol.Optional(
+                    CONF_SCAN_INTERVAL,
+                    default=DEFAULT_SCAN_INTERVAL,
+                ): vol.All(int, vol.Range(min=1, max=3600)),
+            }
         )
+    },
+    extra=vol.ALLOW_EXTRA,
+)
 
+
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Import the legacy YAML configuration into a config entry."""
+    if DOMAIN not in config:
+        return True
+
+    hass.async_create_task(
+        hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": SOURCE_IMPORT},
+            data=config[DOMAIN],
+        )
+    )
     return True
 
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Set up PB25 from a config entry."""
+    host = normalize_host(entry.data[CONF_HOST])
+    scan_interval = entry.options.get(
+        CONF_SCAN_INTERVAL,
+        entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+    )
+
+    coordinator = PB25DataUpdateCoordinator(
+        hass,
+        host=host,
+        scan_interval=scan_interval,
+        config_entry=entry,
+    )
+
+    # Let Home Assistant retry setup if the burner is temporarily unreachable.
+    await coordinator.async_config_entry_first_refresh()
+    entry.runtime_data = coordinator
+
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload the PB25 config entry."""
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)

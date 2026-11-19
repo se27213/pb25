@@ -1,0 +1,28 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "host": "Värdnamn eller IP-adress (port valfri)",
+          "scan_interval": "Uppdateringsintervall i sekunder"
+        }
+      }
+    },
+    "error": {
+      "invalid_host": "Ange ett värdnamn eller en IP-adress, eventuellt med port"
+    },
+    "abort": {
+      "already_configured": "Den här PB25-enheten är redan konfigurerad",
+      "invalid_host": "Värdnamnet i YAML-konfigurationen är ogiltigt"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "scan_interval": "Uppdateringsintervall i sekunder"
+        }
+      }
+    }
+  }
+}

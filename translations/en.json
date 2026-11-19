@@ -1,0 +1,28 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "host": "Hostname or IP address (optional port)",
+          "scan_interval": "Polling interval in seconds"
+        }
+      }
+    },
+    "error": {
+      "invalid_host": "Enter a hostname or IP address, optionally with a port"
+    },
+    "abort": {
+      "already_configured": "This PB25 device is already configured",
+      "invalid_host": "The YAML host value is invalid"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "scan_interval": "Polling interval in seconds"
+        }
+      }
+    }
+  }
+}

@@ -1,10 +1,45 @@
-# pb25
-Integration för Home Assistant med en Pelletsbrännare PB25 från KMP AB
+# PB25 Home Assistant integration
 
-Jag har lagt filerna i en egen katalog och startat om HA
-/usr/share/hassio/homeassistant/custom_components/pb25
+Custom integration for the KMP PB25 pellet burner.
 
-Samtliga sensorer måste deklareras i sensor.py inklusive enhet eller None.
+## Installation
 
-Grundkoden framtagen till stor del med AI eftersom jag inte kan python, anpassningar gjorda av mig.
-IP-adress till PB25 måste läggas till i configuration.yaml
+Copy this integration directory to:
+
+    custom_components/pb25
+
+Restart Home Assistant, then add PB25 from Settings → Devices & services → Add integration. Enter the PB25 hostname or IP address. The default polling interval is 30 seconds and can be changed in the integration options.
+
+Existing YAML configuration is imported into a config entry:
+
+    pb25:
+      host: 192.168.1.50
+      scan_interval: 30
+
+Once Home Assistant has imported the entry, remove the pb25 section from configuration.yaml.
+
+## Data source
+
+The integration requests the endpoint already used by the original implementation:
+
+    http://<host>/data.html
+
+It extracts a JSON object from the response and exposes the fields already present in the integration:
+
+- ttop
+- tRoom
+- Flame
+- mode
+- alarm2
+- alarm1
+- glow
+- amps
+
+It does not assume that additional endpoints or fields exist.
+
+## Notes
+
+- Communication uses HTTP, matching the existing PB25 code.
+- Keep the PB25 reachable only on a trusted local network.
+- Numeric sensors must return values convertible to a finite number.
+- Home Assistant must be able to reach the configured host.

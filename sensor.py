@@ -1,71 +1,175 @@
-from homeassistant.helpers.entity import Entity
+"""PB25 sensor platform."""
 
-async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
-    """Set up the PB25 sensors."""
-    coordinator = hass.data["pb25"]
+from __future__ import annotations
 
-    # Create sensor entities for each relevant piece of data
-    sensors = [
-        PB25Sensor(coordinator, "ttop", "Temperature", "°C"),
-        PB25Sensor(coordinator, "tRoom", "Rumstemp", "°C"),
-        PB25Sensor(coordinator, "Flame", "Flamma", "Flamma"),
-        PB25Sensor(coordinator, "mode", "Driftsläge", None),
-        PB25Sensor(coordinator, "alarm2", "Larmtext", None),
-        PB25Sensor(coordinator, "alarm1", "Larmstatus", None),
-        PB25Sensor(coordinator, "glow", "Tändning", None),
-        PB25Sensor(coordinator, "amps", "Ström", "A"),
-        # Add other sensors here
-    ]
+import logging
+import math
+from typing import Any
 
-    async_add_entities(sensors)
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorEntityDescription,
+    SensorStateClass,
+)
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import (
+    EntityCategory,
+    UnitOfElectricCurrent,
+    UnitOfTemperature,
+)
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-class PB25Sensor(Entity):
-    """Representation of a PB25 sensor."""
+from .const import DOMAIN
+from .coordinator import PB25DataUpdateCoordinator
 
-    def __init__(self, coordinator, sensor_type, name, unit_of_measurement):
+_LOGGER = logging.getLogger(__name__)
+
+SENSORS: tuple[SensorEntityDescription, ...] = (
+    SensorEntityDescription(
+        key="mode",
+        name="PB25 Driftsläge",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    SensorEntityDescription(
+        key="ttop",
+        name="PB25 Temperature",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    SensorEntityDescription(
+        key="Flame",
+        name="PB25 Flamma",
+    ),
+    SensorEntityDescription(
+        key="glow",
+        name="PB25 Tändning",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    SensorEntityDescription(
+        key="alarm1",
+        name="PB25 Larmstatus",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    SensorEntityDescription(
+        key="alarm2",
+        name="PB25 Larmtext",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    SensorEntityDescription(
+        key="tRoom",
+        name="PB25 Rumstemp",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    SensorEntityDescription(
+        key="amps",
+        name="PB25 Ström",
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+)
+
+# Suggested object IDs preserve the entity IDs used by the current local version.
+ENTITY_OBJECT_IDS = {
+    "mode": "pb25_driftslage",
+    "ttop": "pb25_temperature",
+    "Flame": "pb25_flamma",
+    "glow": "pb25_tandning",
+    "alarm1": "pb25_larmstatus",
+    "alarm2": "pb25_larmtext",
+    "tRoom": "pb25_rumstemp",
+    "amps": "pb25_strom",
+}
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up PB25 sensors."""
+    coordinator: PB25DataUpdateCoordinator = entry.runtime_data
+
+    async_add_entities(
+        PB25Sensor(coordinator, entry, description)
+        for description in SENSORS
+    )
+
+
+class PB25Sensor(CoordinatorEntity[PB25DataUpdateCoordinator], SensorEntity):
+    """A sensor backed by the PB25 coordinator."""
+
+    entity_description: SensorEntityDescription
+    _attr_has_entity_name = False
+
+    def __init__(
+        self,
+        coordinator: PB25DataUpdateCoordinator,
+        entry: ConfigEntry,
+        description: SensorEntityDescription,
+    ) -> None:
         """Initialize the sensor."""
-        self._coordinator = coordinator
-        self._sensor_type = sensor_type
-        self._name = name
-        self._unit_of_measurement = unit_of_measurement
-        self._state = None
+        super().__init__(coordinator)
+        self.entity_description = description
+        self._key = description.key
+        self._attr_unique_id = f"{entry.entry_id}_{description.key}"
+        self._attr_name = description.name
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, coordinator.host)},
+            name=f"PB25 ({coordinator.host})",
+            manufacturer="KMP AB",
+            model="PB25",
+        )
 
     @property
-    def name(self):
-        """Return the name of the sensor."""
-        return f"PB25 {self._name}"
+    def suggested_object_id(self) -> str | None:
+        """Suggest a stable initial entity ID while allowing registry edits."""
+        return ENTITY_OBJECT_IDS.get(self._key)
 
     @property
-    def state(self):
-        """Return the state of the sensor."""
-        if self._coordinator.data is None:
+    def native_value(self) -> str | float | None:
+        """Return the current PB25 value."""
+        raw_value: Any = self.coordinator.data.get(self._key)
+
+        if raw_value is None:
             return None
 
-        # Fetch value from the coordinator's data
-        value = self._coordinator.data.get(self._sensor_type)
-
-        if value is None:
-            return None
-
-        # Handle numerical values
-        if self._unit_of_measurement:
-            try:
-                # Try to convert to float if a unit of measurement is defined
-                return float(value)
-            except ValueError:
-                # If conversion fails, log an error and return None
-                _LOGGER.error(f"Unable to convert value '{value}' for sensor '{self._name}' to float.")
+        if self.entity_description.native_unit_of_measurement:
+            if isinstance(raw_value, bool):
+                _LOGGER.warning("PB25 returned a boolean for numeric field %s", self._key)
                 return None
-        else:
-            # Return text values as is
-            return str(value)
+            try:
+                value = float(raw_value)
+            except (TypeError, ValueError):
+                _LOGGER.warning(
+                    "Non-numeric PB25 value for field %s: %r",
+                    self._key,
+                    raw_value,
+                )
+                return None
+
+            if not math.isfinite(value):
+                _LOGGER.warning(
+                    "Non-finite PB25 value for field %s: %r",
+                    self._key,
+                    raw_value,
+                )
+                return None
+            return value
+
+        return str(raw_value)
 
     @property
-    def unit_of_measurement(self):
-        """Return the unit of measurement for the sensor."""
-        return self._unit_of_measurement
-
-    async def async_update(self):
-        """Update the sensor state."""
-        await self._coordinator.async_request_refresh()
-
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Expose the PB25 key and raw field value for existing templates."""
+        return {
+            "pb25_key": self._key,
+            "raw": self.coordinator.data.get(self._key),
+        }

@@ -1,7 +1,7 @@
 {
   "domain": "pb25",
   "name": "PB25 Integration",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "documentation": "https://github.com/se27213/pb25",
   "codeowners": ["@se27213"],
   "config_flow": true,
